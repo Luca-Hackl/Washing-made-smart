@@ -1,27 +1,20 @@
-/*
-int pin = 33;
-
-void setup() {
-  Serial.begin(9600);
-  pinMode(pin, INPUT);
-
-}
-
-void loop() {
-  delay(10);
-  Serial.println(digitalRead(pin));
-}
-*/
-
 //Libraries
 #include <SPI.h>//https://www.arduino.cc/en/reference/SPI
 #include <MFRC522.h>//https://github.com/miguelbalboa/rfid
+#include <elapsedMillis.h>
 
 //Constants
 #define SS_PIN 5
 #define RST_PIN 15
 
+int pin = 21;
+
+const int delayBetweenMeasure = 600000;
+const int measureFor = 60000;
+
 byte myTag1[4] = {};
+
+elapsedMillis measure;
 
 boolean test = true;
 
@@ -34,6 +27,8 @@ MFRC522::MIFARE_Key key;
 MFRC522 rfid = MFRC522(SS_PIN, RST_PIN);
 
 void setup() {
+
+   pinMode(pin, INPUT); //initializes sensor
   //Init Serial USB
   Serial.begin(115200);
   Serial.println(F("Initialize System"));
@@ -75,7 +70,7 @@ void readRFID(void ) { /* function readRFID */
 
 
     for (byte i = 0; i < 4; i++) {
-        if (nuidPICC[i] != myTags[i]){
+        if (nuidPICC[i] != myTag1[i]){
         test = false;
        } 
 
@@ -86,6 +81,8 @@ void readRFID(void ) { /* function readRFID */
 
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
+
+  loop2();
 
 }
 
@@ -107,4 +104,28 @@ void printDec(byte *buffer, byte bufferSize) {
     Serial.print(buffer[i] < 0x10 ? " 0" : " ");
     Serial.print(buffer[i], DEC);
   }
+}
+
+void loop2(){
+  boolean isRunning = true;
+  Serial.println("Messung startet");
+
+  while(isRunning == true){
+    delay(delayBetweenMeasure);
+    measure = 0;
+    while (measure < measureFor){
+        if (digitalRead(pin) == 1){
+          isRunning = true;
+          break;
+        } else {
+          isRunning = false;
+          sendMessage();
+        }
+    }
+  }
+}
+
+
+void sendMessage(){
+  
 }
