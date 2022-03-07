@@ -9,17 +9,13 @@
 
 int pin = 21;
 
-const int delayBetweenMeasure = 600000;
-const int measureFor = 60000;
+const int delayBetweenMeasure = 600000; // 10 minutes
+const int measureDuration = 60000; // 1 minute
 
-byte myTag1[4] = {};
 
-elapsedMillis measure;
+byte tomsTag[4] = {103, 97, 67, 25};
+byte myTag2[4] = {103, 97, 67, 25};
 
-boolean test = true;
-
-//Parameters
-const int ipaddress[4] = {103, 97, 67, 25};
 
 //Variables
 byte nuidPICC[4] = {0, 0, 0, 0};
@@ -29,9 +25,11 @@ MFRC522 rfid = MFRC522(SS_PIN, RST_PIN);
 void setup() {
 
    pinMode(pin, INPUT); //initializes sensor
+
   //Init Serial USB
   Serial.begin(115200);
   Serial.println(F("Initialize System"));
+
   //init rfid D8,D5,D6,D7
   SPI.begin();
   rfid.PCD_Init();
@@ -44,18 +42,19 @@ void loop() {
   readRFID();
 }
 
-void readRFID(void ) { /* function readRFID */
-  ////Read RFID card
-
+void readRFID(void) { /* function readRFID */
+  
+  // Scan for RFID card
   for (byte i = 0; i < 6; i++) {
     key.keyByte[i] = 0xFF;
   }
-  // Look for new 1 cards
-  if ( ! rfid.PICC_IsNewCardPresent())
+
+  // Return if no card is present
+  if (!rfid.PICC_IsNewCardPresent())
     return;
 
-  // Verify if the NUID has been readed
-  if (  !rfid.PICC_ReadCardSerial())
+  // Verify if the NUID has been read
+  if (!rfid.PICC_ReadCardSerial())
     return;
 
   // Store NUID into nuidPICC array
@@ -63,15 +62,12 @@ void readRFID(void ) { /* function readRFID */
     nuidPICC[i] = rfid.uid.uidByte[i];
   }
 
-  Serial.print(F("RFID In dec: "));
+  Serial.print(F("Read the following tag: "));
   printDec(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
 
-
-
     for (byte i = 0; i < 4; i++) {
-        if (nuidPICC[i] != myTag1[i]){
-        test = false;
+        if (nuidPICC[i] != tomsTag[i]){
        } 
 
     }
@@ -82,8 +78,29 @@ void readRFID(void ) { /* function readRFID */
   // Stop encryption on PCD
   rfid.PCD_StopCrypto1();
 
-  loop2();
+  washingAnalysisLoop();
 
+}
+
+void washingAnalysisLoop(){
+  boolean isRunning = true;
+  Serial.println("Washing loop startet");
+
+  while(isRunning == true){
+    Serial.println("Waiting for " + String(delayBetweenMeasure) + " milliseconds");
+    delay(delayBetweenMeasure);
+    Serial.println("Starting measurement");
+
+    int measure = 0;
+    for (int i = 0; i < measureDuration; i++) {
+      measure += digitalRead(pin);
+      delay(1);
+    }
+    if (measure == 0){
+        isRunning = false;
+        sendMessage();
+    }
+  }
 }
 
 /**
@@ -106,26 +123,6 @@ void printDec(byte *buffer, byte bufferSize) {
   }
 }
 
-void loop2(){
-  boolean isRunning = true;
-  Serial.println("Messung startet");
-
-  while(isRunning == true){
-    delay(delayBetweenMeasure);
-    measure = 0;
-    while (measure < measureFor){
-        if (digitalRead(pin) == 1){
-          isRunning = true;
-          break;
-        } else {
-          isRunning = false;
-          sendMessage();
-        }
-    }
-  }
-}
-
-
 void sendMessage(){
-  
+  Serial.println("Washing maschine finished!");
 }
