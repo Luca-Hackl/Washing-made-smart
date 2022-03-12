@@ -15,13 +15,23 @@ const int delayBetweenMeasure = 600000; // 10 minutes
 const int measureDuration = 60000; // 1 minute
 
 
-byte tomsTag[4] = {115, 191, 129, 015};
-byte myTag2[4] = {103, 97, 67, 25};
+// mapping of a tag to a discord id
+typedef struct { 
+  byte tag[4];
+  String discordID;
+} nfcTagToDiscordID;
+
+const nfcTagToDiscordID tagsToDiscord[] {
+  {{115, 191, 129, 015}, "351460900370120707"}, // Tom
+  {{147, 177, 217, 18}, "252061771181850625"} // Luca
+};
 
 
-const char* ssid = "";
-const char* password = "";
-const char* webhookUrl = "";
+
+
+const char* ssid = "Baumhaus";
+const char* password = "9Oi1Fy_d+K666";
+const char* webhookUrl = "https://discord.com/api/webhooks/950482190788083772/Vr1z0YAxqP6mapTyW3ihfcOSRROoiDNjX-JUsPBCtlUyv7L0k0GH7IThNH4yYCCEITdl";
 
 HTTPClient http;
 
@@ -98,12 +108,6 @@ void readRFID() { /* function readRFID */
   printDec(rfid.uid.uidByte, rfid.uid.size);
   Serial.println();
 
-    for (byte i = 0; i < 4; i++) {
-        if (nuidPICC[i] != tomsTag[i]){
-       } 
-
-    }
-
   // Halt PICC
   rfid.PICC_HaltA();
 
@@ -118,13 +122,9 @@ void washingAnalysisLoop(){
   boolean isRunning = true;
   Serial.println("Washing loop startet");
 
-  char discordID[20];
-  tagToDiscordID(nuidPICC, discordID);
-  Serial.println(discordID);
-  
   sendDiscordMessage(
      "{\
-       \"content\": \"<@!" + String(discordID) + ">\", \
+       \"content\": \"<@!" + tagToDiscordID(nuidPICC) + ">\", \
        \"embeds\": [\
          {\
            \"title\": \"Washing monitoring started\",\
@@ -173,12 +173,10 @@ void printDec(byte *buffer, byte bufferSize) {
 
 void sendMessage(){
   Serial.println("Washing machine finished!");
-  char discordID[20];
-  tagToDiscordID(nuidPICC, discordID);
   
   sendDiscordMessage(
      "{\
-       \"content\": \"<@!" + String(discordID) + ">\", \
+       \"content\": \"<@!" + tagToDiscordID(nuidPICC) + ">\", \
        \"embeds\": [\
          {\
            \"title\": \"Washing machine finished!\",\
@@ -195,16 +193,18 @@ void sendDiscordMessage(String content) {
   http.POST(content);
 }
 
-void tagToDiscordID(byte tag[], char* outID) {
+String tagToDiscordID(byte tag[]) {
+  for (uint8_t i = 0; i < sizeof(tagsToDiscord); i++)
+  {
     bool equals = true;
-    for (byte i = 0; i < 4; i++) {
-        if (tag[i] != tomsTag[i]){
+    for (byte j = 0; j < 4; j++) {
+        if (tag[j] != tagsToDiscord[i].tag[j]){
           equals = false;
         } 
     }
     if (equals) {
-      memcpy(outID, "351460900370120707", sizeof("351460900370120707"));
-      return;
+      return tagsToDiscord[i].discordID;
     }
-    memcpy(outID, "000000000000000000", sizeof("000000000000000000"));
+  }
+  return "";
 }
