@@ -9,9 +9,10 @@
 #define SS_PIN 5
 #define RST_PIN 15
 
-int pin = 21;
+int pin = 35;
 
-const int delayBetweenMeasure = 600000; // 10 minutes
+const int delayBetweenMeasure = 600000;
+// 10 minutes
 const int measureDuration = 60000; // 1 minute
 
 
@@ -29,8 +30,8 @@ const nfcTagToDiscordID tagsToDiscord[] {
 
 
 
-const char* ssid = "Baumhaus";
-const char* password = "9Oi1Fy_d+K666";
+const char* ssid = "";
+const char* password = "";
 const char* webhookUrl = "https://discord.com/api/webhooks/950482190788083772/Vr1z0YAxqP6mapTyW3ihfcOSRROoiDNjX-JUsPBCtlUyv7L0k0GH7IThNH4yYCCEITdl";
 
 HTTPClient http;
@@ -55,17 +56,7 @@ void setup() {
   Serial.print(F("Reader :"));
   rfid.PCD_DumpVersionToSerial();
 
-  // connecting to wifi
-  WiFi.begin(ssid, password);
- 
-  Serial.println("Establishing connection to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
-  }
-  Serial.print("\n");
-  Serial.println("Connected to network with IP:");
-  Serial.println(WiFi.localIP());
+  connectToWifi();
 
    sendDiscordMessage(
      "{\
@@ -98,6 +89,11 @@ void readRFID() { /* function readRFID */
   // Verify if the NUID has been read
   if (!rfid.PICC_ReadCardSerial())
     return;
+
+
+  if (WiFi.status() != WL_CONNECTED) {
+    connectToWifi();
+  }
 
   // Store NUID into nuidPICC array
   for (byte i = 0; i < 4; i++) {
@@ -207,4 +203,17 @@ String tagToDiscordID(byte tag[]) {
     }
   }
   return "";
+}
+
+void connectToWifi(){
+  WiFi.begin(ssid, password);
+ 
+  Serial.println("Establishing connection to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.print(".");
+  }
+  Serial.print("\n");
+  Serial.println("Connected to network with IP:");
+  Serial.println(WiFi.localIP());
 }
